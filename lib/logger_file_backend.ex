@@ -2,7 +2,7 @@ defmodule LoggerFileBackend do
   @moduledoc"""
   """
 
-  use GenEvent
+  @behaviour :gen_event
 
   @type path      :: String.t
   @type file      :: :file.io_device
@@ -28,6 +28,13 @@ defmodule LoggerFileBackend do
     {:ok, {:ok, path}, state}
   end
 
+  def handle_info(_, state) do
+    {:ok, state}
+  end
+
+  def handle_event({_level, gl, _event}, state) when node(gl) != node() do
+    {:ok, state}
+  end
 
   def handle_event({level, _gl, {Logger, msg, ts, md}}, %{level: min_level, metadata_filter: metadata_filter} = state) do
     if (is_nil(min_level) or Logger.compare_levels(level, min_level) != :lt) and metadata_matches?(md, metadata_filter) do
@@ -44,6 +51,7 @@ defmodule LoggerFileBackend do
 
 
   # helpers
+
 
   defp log_event(_level, _msg, _ts, _md, %{path: nil} = state) do
     {:ok, state}
